@@ -86,8 +86,66 @@ while True:
         break
 
 df_total[""] = ""  #df_total增加一列空列
-df_total.index = df_total.index + 1  # 修改df_total的索引
 
+
+# 按赛事名统计各项指标
+event_stats = df_total.groupby('比赛名').agg({
+    '投币数量': 'sum',           # 总投币数
+    '获得收益': 'sum',           # 总收益
+    '预测选项': 'count'          # 总场数
+}).reset_index()
+
+# 重命名列
+event_stats = event_stats.rename(columns={
+    '投币数量': '总投币数',
+    '获得收益': '总收益',
+    '预测选项': '总场数'
+})
+
+# 计算胜场、败场和胜率
+def calculate_win_stats(group):
+    # 胜场：预测选项 == 正确选项
+    wins = (group['预测选项'] == group['正确选项']).sum()
+    # 总场数
+    total = len(group)
+    # 败场
+    losses = total - wins
+    # 胜率
+    win_rate = wins / total if total > 0 else 0
+    return pd.Series({
+        '胜场': wins,
+        '败场': losses,
+        '胜率': win_rate
+    })
+
+# 按赛事计算胜场统计
+win_stats = df_total.groupby('比赛名').apply(calculate_win_stats).reset_index()
+
+# 合并统计数据
+final_stats = event_stats.merge(win_stats, on='比赛名')
+
+final_stats.insert(3, '总利润', final_stats['总收益'] - final_stats['总投币数'])
+
+#将final_Stats内各个数据算出一个总数在最后一行
+total = final_stats.shape[0] + 1
+final_stats.loc[total] = [
+    "总",
+    final_stats["总投币数"].sum(),
+    final_stats["总收益"].sum(),
+    final_stats["总利润"].sum(),
+    final_stats["总场数"].sum(),
+    final_stats["胜场"].sum(),
+    final_stats["败场"].sum(),
+    final_stats["胜场"].sum() / final_stats["总场数"].sum(),
+]
+
+# 格式化胜率为百分比
+final_stats['胜率'] = (final_stats['胜率'] * 100).round(2).astype(str) + '%'
+#重置final_stats的索引
+final_stats.reset_index(drop=True, inplace=True)
+
+
+df_total["赛事名"] = "" #[0,8]
 df_total["总投币数"] = ""
 df_total["总收益"] = ""
 df_total["总利润"] = ""
@@ -96,12 +154,15 @@ df_total["胜场"] =  ""
 df_total["败场"] = ""
 df_total["胜率"] = ""
 
-df_total.iloc[0, 8] = df_total["投币数量"].sum()
-df_total.iloc[0, 9] = df_total["获得收益"].sum()
-df_total.iloc[0, 10] = df_total.iloc[0, 9] - df_total.iloc[0, 8]
-df_total.iloc[0, 11] = df_total.shape[0]
-df_total.iloc[0, 12] = df_total[df_total["获得收益"] > 0].shape[0]
-df_total.iloc[0, 13] = df_total[df_total["获得收益"] == 0].shape[0]
-df_total.iloc[0, 14] = df_total.iloc[0, 12] / df_total.iloc[0, 11]
+for i in range(0, final_stats.shape[0]):
+    df_total.loc[i, "赛事名"] = final_stats.loc[i, "比赛名"]
+    df_total.loc[i, "总投币数"] = final_stats.loc[i, "总投币数"]
+    df_total.loc[i, "总收益"] = final_stats.loc[i, "总收益"]
+    df_total.loc[i, "总利润"] = final_stats.loc[i, "总利润"]
+    df_total.loc[i, "总场数"] = final_stats.loc[i, "总场数"]
+    df_total.loc[i, "胜场"] = final_stats.loc[i, "胜场"]
+    df_total.loc[i, "败场"] = final_stats.loc[i, "败场"]
+    df_total.loc[i, "胜率"] = final_stats.loc[i, "胜率"]
 
-df_total.to_excel("bili赛事预测数据.xlsx")
+df_total.index = df_total.index + 1  # 修改df_total的索引
+df_total.to_excel("bili赛事预测统计数据.xlsx")
