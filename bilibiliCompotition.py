@@ -1,8 +1,10 @@
+import os
 import pandas as pd
 from DrissionPage import Chromium,ChromiumPage,ChromiumOptions
 import time
 import requests
 
+print("正在启动浏览器获取登录信息...")
 # 启动浏览器
 try:
     tab = Chromium().latest_tab
@@ -60,6 +62,7 @@ columns = ["比赛名", "对战队伍", "预测选项", "正确选项", "投币�
 df_total = pd.DataFrame(data=None, columns=columns)
 df = pd.DataFrame(data=None)
 # 获取数据
+print("正在读取数据中...")
 while True:
     params["pn"] += 1
     response = requests.get(url, headers=headers, cookies=cookies_dict, params=params)
@@ -68,25 +71,26 @@ while True:
     if data["data"]["record"] is not None:
         #数据处理并且保存为excel文件
         for i in range(len(data["data"]["record"])):
-            df.loc[i, 0] = data["data"]["record"][i]["contest"]["season"]["title"]
-            df.loc[i, 1] = data["data"]["record"][i]["guess"][0]["title"][:-5]
-            df.loc[i, 2] = data["data"]["record"][i]["guess"][0]["option"]
-            df.loc[i, 3] = data["data"]["record"][i]["guess"][0]["right_option"]
-            df.loc[i, 4] = data["data"]["record"][i]["guess"][0]["stake"]
-            df.loc[i, 5] = data["data"]["record"][i]["guess"][0]["odds"]
-            df.loc[i, 6] = data["data"]["record"][i]["guess"][0]["income"]
+            df.loc[i, 0] = data["data"]["record"][i]["contest"]["season"]["title"] #比赛名
+            df.loc[i, 1] = data["data"]["record"][i]["guess"][0]["title"][:-5] #队
+            df.loc[i, 2] = data["data"]["record"][i]["guess"][0]["option"] #预测选项
+            df.loc[i, 3] = data["data"]["record"][i]["guess"][0]["right_option"] #正确选项
+            df.loc[i, 4] = data["data"]["record"][i]["guess"][0]["stake"] #投币数量
+            df.loc[i, 5] = data["data"]["record"][i]["guess"][0]["odds"] #赔率
+            df.loc[i, 6] = data["data"]["record"][i]["guess"][0]["income"] #获得收益
 
         df.columns = columns  # 修改df的列名
         df_total = df_total._append(df, ignore_index=True)# 将df的数据添加到df_total中
         df = pd.DataFrame(data=None)
-        time.sleep(0.1)
+        time.sleep(0.2)
 
     else:
         print("读取结束")
         break
 
-df_total[""] = ""  #df_total增加一列空列
+print("正在处理数据、保存数据")
 
+df_total[""] = ""  #df_total增加一列空列
 
 # 按赛事名统计各项指标
 event_stats = df_total.groupby('比赛名').agg({
@@ -145,14 +149,10 @@ final_stats['胜率'] = (final_stats['胜率'] * 100).round(2).astype(str) + '%'
 final_stats.reset_index(drop=True, inplace=True)
 
 
-df_total["赛事名"] = "" #[0,8]
-df_total["总投币数"] = ""
-df_total["总收益"] = ""
-df_total["总利润"] = ""
-df_total["总场数"] = ""
-df_total["胜场"] =  ""
-df_total["败场"] = ""
-df_total["胜率"] = ""
+# 初始化统计列
+stat_columns = ["赛事名", "总投币数", "总收益", "总利润", "总场数", "胜场", "败场", "胜率"]
+for col in stat_columns:
+    df_total[col] = ""
 
 for i in range(0, final_stats.shape[0]):
     df_total.loc[i, "赛事名"] = final_stats.loc[i, "比赛名"]
@@ -166,3 +166,10 @@ for i in range(0, final_stats.shape[0]):
 
 df_total.index = df_total.index + 1  # 修改df_total的索引
 df_total.to_excel("bili赛事预测统计数据.xlsx")
+
+print("数据处理完成，已保存并打开 bili赛事预测统计数据.xlsx")
+print("程序5秒后自动退出...")
+time.sleep(2)
+os.startfile("bili赛事预测统计数据.xlsx")
+time.sleep(4)
+quit()
