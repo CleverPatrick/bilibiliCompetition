@@ -3,6 +3,8 @@ import pandas as pd
 from DrissionPage import Chromium,ChromiumPage,ChromiumOptions
 import time
 import requests
+import warnings
+warnings.simplefilter(action='ignore', category=FutureWarning)
 
 print("正在启动浏览器获取登录信息...")
 # 启动浏览器
@@ -31,11 +33,16 @@ except:
 
 #获取总场数来判断是否登录
 while True:
-    sum = tab.ele('x://*[@id="server-game-app"]/div[2]/div[2]/div[2]/div[1]/ul/li[1]/span').text
-    if sum == "-":
-        input("请登录Bilibili后，再按回车键继续...")
-    else:
-        break
+    try:
+        time.sleep(1)
+        sum = tab.ele('x://*[@id="server-game-app"]/div[2]/div[2]/div[2]/div[1]/ul/li[1]/span').text
+        if sum == "-":
+            input("请登录Bilibili后，再按回车键继续...")
+        else:
+            break
+    except:
+        tab.get('https://www.bilibili.com/v/game/match/competition')
+        continue
 
 # 获取当前 Cookie 并转换为字典格式
 cookies_list = tab.cookies()
