@@ -31,14 +31,11 @@ except:
 
 #获取总场数来判断是否登录
 while True:
-    try:
-        sum = tab.ele('x://*[@id="server-game-app"]/div[2]/div[2]/div[2]/div[1]/ul/li[1]/span').text
-        if sum == "-":
-            input("请登录Bilibili后，再按回车键继续...")
-        else:
-            break
-    except:
-        continue
+    sum = tab.ele('x://*[@id="server-game-app"]/div[2]/div[2]/div[2]/div[1]/ul/li[1]/span').text
+    if sum == "-":
+        input("请登录Bilibili后，再按回车键继续...")
+    else:
+        break
 
 # 获取当前 Cookie 并转换为字典格式
 cookies_list = tab.cookies()
@@ -50,7 +47,6 @@ tab.close()
 
 headers = {
     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36 Edg/142.0.0.0",
-    #              Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36 Edg/142.0.0.0
     "Referer": "https://www.bilibili.com/",
 }
 
@@ -127,7 +123,7 @@ def calculate_win_stats(group):
     })
 
 # 按赛事计算胜场统计
-win_stats = df_total.groupby('比赛名').apply(calculate_win_stats, include_groups=False).reset_index()
+win_stats = df_total.groupby('比赛名').apply(calculate_win_stats).reset_index()
 
 # 合并统计数据
 final_stats = event_stats.merge(win_stats, on='比赛名')
@@ -175,5 +171,5 @@ print("数据处理完成，已保存并打开 bili赛事预测统计数据.xlsx
 print("程序5秒后自动退出...")
 time.sleep(2)
 os.startfile("bili赛事预测统计数据.xlsx")
-time.sleep(3)
+time.sleep(4)
 quit()
